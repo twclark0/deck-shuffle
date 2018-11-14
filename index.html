@@ -1,0 +1,86 @@
+<html>
+  <head></head>
+  <body>
+    <p id="results"></p>
+    <button onclick="app()">Run app</button>
+    <script>
+      const shuffleDeckApi =
+        'https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1'
+
+      const getDeckId = async () => {
+        const deckIdJson = await fetch(shuffleDeckApi)
+        const { deck_id } = await deckIdJson.json()
+        return deck_id
+      }
+
+      const getCards = async deckId => {
+        const cardsJson = await fetch(
+          `https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`
+        )
+        const { cards } = await cardsJson.json()
+        return cards
+      }
+
+      const checkForQueens = deck => {
+        let result = true
+        for (let i in deck) {
+          if (!deck[i].includes('QUEEN')) {
+            result = false
+            break
+          }
+        }
+        return result
+      }
+
+      const mapWordToNumber = a => {
+        if (a === 'KING') {
+          return 13
+        } else if (a === 'QUEEN') {
+          return 12
+        } else if (a === 'JACK') {
+          return 11
+        } else if (a === 'ACE') {
+          return 0
+        } else {
+          return Number(a)
+        }
+      }
+
+      const sortedDeck = deck => {
+        for (let i in deck) {
+          deck[i].sort((a, b) => {
+            let newA = mapWordToNumber(a)
+            let newB = mapWordToNumber(b)
+            return newA < newB ? -1 : newA > newB ? 1 : 0
+          })
+        }
+        return deck
+      }
+
+      const app = async () => {
+        const deck_id = await getDeckId()
+        let deck = {
+          SPADES: [],
+          CLUBS: [],
+          HEARTS: [],
+          DIAMONDS: []
+        }
+        const loop = setInterval(async () => {
+          if (checkForQueens(deck)) {
+            clearInterval(loop)
+            document.getElementById('results').innerHTML = JSON.stringify(
+              sortedDeck(deck),
+              null,
+              2
+            )
+          } else {
+            const cards = await getCards(deck_id)
+            cards.forEach(c => {
+              deck[c.suit] = [...deck[c.suit], c.value]
+            })
+          }
+        }, 1000)
+      }
+    </script>
+  </body>
+</html>
